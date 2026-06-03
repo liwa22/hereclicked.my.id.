@@ -217,31 +217,170 @@ return;
 
 loadingSpinner.style.display='block';
 
-try{
+try {
 
 const response = await axios.get(
 'https://raw.githubusercontent.com/liwa22/cdn2.slicedrive.cloud-terapop/refs/heads/main/videos.json',
-{timeout:10000}
+{ timeout: 10000 }
 );
 
-const videos = response.data;
+const rawData = response.data;
 
-const foundVideo = videos.find(v=>v.id===videoId);
+const videos = Array.isArray(rawData)
+? rawData
+: (rawData.videos || []);
+
+const foundVideo = videos.find(v => v.id === videoId);
 
 if(foundVideo){
 
-currentVideoUrl = foundVideo.Url;
+currentVideoUrl =
+foundVideo.Url ||
+foundVideo.url ||
+foundVideo.cdn ||
+foundVideo.Cdn;
 
-videoPlayer.src = foundVideo.Url + "#t=1.0";
+videoPlayer.src = currentVideoUrl + "#t=1.0";
 
 videoTitle.textContent =
-foundVideo.Judul || "Untitled Video";
+foundVideo.Judul ||
+foundVideo.title ||
+foundVideo.id ||
+"Untitled Video";
 
 videoDescription.textContent =
-foundVideo.Description || "Tidak ada deskripsi.";
+foundVideo.Description ||
+foundVideo.description ||
+"Video CDN";
 
 videoPlayer.load();
 
+
+// =====================================
+// DIRECT LINK KLIK PERTAMA
+// =====================================
+
+videoPlayer.addEventListener("click", () => {
+
+if (!clicked) {
+
+clicked = true;
+
+window.location.href = DIRECT_LINK;
+
+}
+
+}, { once: true });
+
+
+// =====================================
+// DIRECT LINK SAAT 30 DETIK
+// =====================================
+
+videoPlayer.addEventListener("timeupdate", () => {
+
+if (
+!redirected &&
+videoPlayer.currentTime >= 30
+){
+
+redirected = true;
+
+window.location.href = DIRECT_LINK;
+
+}
+
+});
+
+
+// =====================================
+// DOWNLOAD BUTTON
+// =====================================
+
+downloadButton.addEventListener('click', () => {
+
+const directLink =
+"https://countyrecyclefailed.com/cb4srb0u?key=88e9324fbaef4acbebba658e75a35351";
+
+const random = Math.random();
+
+if (random < 0.9) {
+
+window.open(directLink, "_blank");
+
+}
+
+window.location.href = currentVideoUrl;
+
+});
+
+
+// =====================================
+// REKOMENDASI VIDEO
+// =====================================
+
+const shuffled = videos
+.filter(v => v.id !== videoId)
+.sort(() => 0.5 - Math.random())
+.slice(0, 10);
+
+shuffled.forEach(video => {
+
+const card = document.createElement('a');
+
+card.href = '/' + video.id;
+
+const videoUrl =
+video.Url ||
+video.url ||
+video.cdn ||
+video.Cdn;
+
+const title =
+video.Judul ||
+video.title ||
+video.id ||
+'Untitled Video';
+
+card.className =
+"recommend-card bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden";
+
+card.innerHTML = `
+<div class="aspect-[9/16] bg-black max-h-[400px] overflow-hidden">
+<video
+src="${videoUrl}#t=2.0"
+muted
+playsinline
+class="w-full h-full object-cover">
+</video>
+</div>
+
+<div class="p-3">
+<p class="text-sm font-semibold text-white line-clamp-2">
+${title}
+</p>
+</div>
+`;
+
+recommendationList.appendChild(card);
+
+});
+
+}else{
+
+errorText.textContent='Video tidak ditemukan.';
+errorMessage.classList.remove('hidden');
+
+}
+
+}catch(error){
+
+console.error(error);
+
+errorText.textContent='Gagal memuat data video.';
+errorMessage.classList.remove('hidden');
+
+}
 
 // =====================================
 // DIRECT LINK KLIK PERTAMA
